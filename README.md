@@ -39,3 +39,7 @@
 из дерева
 
 ![image](https://github.com/KseniyaMaystrenko/laba6/assets/152999073/92c06026-7360-45f7-972d-d08fda3f4e17)
+
+## используемые материалы
+
+[Создание приложения через Tkinter](https://youtu.be/qsAfMWWmAF8?feature=shared)
