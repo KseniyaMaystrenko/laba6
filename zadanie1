@@ -1,0 +1,140 @@
+import tkinter as tk  # Импорт библиотеки tkinter с псевдонимом tk
+from tkinter import ttk  # Импорт класса ttk из модуля tkinter
+from docx import Document
+
+from geometry.parallelepiped_calculator import calculate_parallelepiped_volume, calculate_parallelepiped_surface_area, \
+    calculate_parallelepiped_mass  # Импорт функций расчета объема, площади поверхности и массы параллелепипеда
+from geometry.tetrahedron_calculator import calculate_tetrahedron_volume, calculate_tetrahedron_surface_area, \
+    calculate_tetrahedron_mass  # Импорт функций расчета объема, площади поверхности и массы тетраэдра
+from geometry.sphere_calculator import calculate_sphere_volume, calculate_sphere_surface_area, \
+    calculate_sphere_mass  # Импорт функций расчета объема, площади поверхности и массы шара
+
+
+class GeometryCalculator:  # Определение класса GeometryCalculator
+    def __init__(self, root):  # Метод инициализации класса
+        self.root = root  # Присваивание атрибуту root ссылки на экземпляр окна
+        self.root.title("Геометрический калькулятор")  # Установка заголовка окна
+
+        self.materials = {  # Словарь материалов и их плотностей
+            "Сталь": {"density": 7.8},
+            "Дерево": {"density": 0.7},
+            "Алюминий": {"density": 2.7}
+        }
+
+        self.selected_material = tk.StringVar()  # Переменная для хранения выбранного материала
+        self.selected_material.set("Сталь")  # Установка начального значения выбранного материала
+
+        self.create_widgets()  # Вызов метода создания виджетов
+
+    def create_widgets(self):  # Метод создания виджетов
+        # Material selection
+        material_label = ttk.Label(self.root, text="Материал:")  # Создание надписи для выбора материала
+        material_label.grid(row=0, column=0, padx=10, pady=5)  # Размещение надписи на сетке
+
+        material_combobox = ttk.Combobox(self.root, textvariable=self.selected_material, values=list(
+            self.materials.keys()))  # Создание выпадающего списка для выбора материала
+        material_combobox.grid(row=0, column=1, padx=10, pady=5)  # Размещение выпадающего списка на сетке
+
+        # Shape selection
+        shape_label = ttk.Label(self.root, text="Фигура:")  # Создание надписи для выбора фигуры
+        shape_label.grid(row=1, column=0, padx=10, pady=5)  # Размещение надписи на сетке
+
+        self.selected_shape = tk.StringVar()  # Переменная для хранения выбранной фигуры
+        self.selected_shape.set("Параллелепипед")  # Установка начального значения выбранной фигуры
+
+        shape_combobox = ttk.Combobox(self.root, textvariable=self.selected_shape, values=["Параллелепипед", "Тетраэдр",
+                                                                                           "Шар"])  # Создание выпадающего списка для выбора фигуры
+        shape_combobox.grid(row=1, column=1, padx=10, pady=5)  # Размещение выпадающего списка на сетке
+        shape_combobox.bind("<<ComboboxSelected>>",
+                            self.on_shape_selected)  # Привязка обработчика события выбора фигуры
+
+        # Dimension inputs
+        self.dimension_labels = []  # Список меток для размерностей
+        self.dimension_labels.append(self.create_dimension_entry("Длина", 2))  # Создание метки и поля ввода для длины
+        self.dimension_labels.append(self.create_dimension_entry("Ширина", 3))  # Создание метки и поля ввода для ширины
+        self.dimension_labels.append(self.create_dimension_entry("Высота", 4))  # Создание метки и поля ввода для высоты
+
+        # Calculate button
+        calculate_button = ttk.Button(self.root, text="Расчитать",
+                                      command=self.calculate)  # Создание кнопки для запуска расчета
+        calculate_button.grid(row=5, column=0, columnspan=2, padx=10, pady=5)  # Размещение кнопки на сетке
+
+        # Output label
+        self.output_label = ttk.Label(self.root, text="")  # Создание метки для вывода результатов
+        self.output_label.grid(row=6, column=0, columnspan=2, padx=10, pady=5)  # Размещение метки на сетке
+
+    def create_dimension_entry(self, label_text, row):  # Метод создания метки и поля ввода для размерности
+        label = ttk.Label(self.root, text=label_text + ":")  # Создание метки для размерности
+        label.grid(row=row, column=0, padx=10, pady=5)  # Размещение метки на сетке
+        entry = ttk.Entry(self.root)  # Создание поля ввода для размерности
+        entry.grid(row=row, column=1, padx=10, pady=5)  # Размещение поля ввода на сетке
+        entry.insert(0, '0')
+        return label, entry  # Возврат метки и поля ввода
+
+    def on_shape_selected(self, event):  # Метод обработки выбора фигуры
+        selected_shape = self.selected_shape.get()  # Получение выбранной фигуры
+        # Если выбран шар, меняем надпись Длина на Радиус и скрываем кнопки Ширина и Высота
+        if selected_shape == "Шар":
+            self.dimension_labels[0][0].config(text="Радиус:")  # Изменение текста метки для радиуса
+            self.dimension_labels[1][0].grid_remove()  # Скрытие метки и поля ввода для ширины
+            self.dimension_labels[1][1].grid_remove()
+            self.dimension_labels[2][0].grid_remove()  # Скрытие метки и поля ввода для высоты
+            self.dimension_labels[2][1].grid_remove()
+        elif selected_shape == "Тетраэдр":
+            self.dimension_labels[0][0].config(text="Длина стороны:")  # Изменение текста метки для длины стороны
+            self.dimension_labels[1][0].grid_remove()  # Скрытие метки и поля ввода для ширины
+            self.dimension_labels[1][1].grid_remove()
+            self.dimension_labels[2][0].grid_remove()  # Скрытие метки и поля ввода для высоты
+            self.dimension_labels[2][1].grid_remove()
+        else:
+            # Восстанавливаем надписи и показываем кнопки, если выбрана другая фигура
+            self.dimension_labels[0][0].config(text="Длина:")  # Возвращаем текст метки к стандартному состоянию
+            self.dimension_labels[1][0].grid()  # Показываем метку и поле ввода для ширины
+            self.dimension_labels[1][1].grid()
+            self.dimension_labels[2][0].grid()  # Показываем метку и поле ввода для высоты
+            self.dimension_labels[2][1].grid()
+
+
+    def save_to_docx(self, volume, surface_area, mass):
+        doc = Document()
+        doc.add_paragraph('Результаты расчётов:')
+        doc.add_paragraph(f'Объём: {volume:.2f}')
+        doc.add_paragraph(f'Площадь поверхности: {surface_area:.2f}')
+        doc.add_paragraph(f'Масса: {mass:.2f}')
+        doc.save('report.docx')
+
+
+    def calculate(self):
+        shape = self.selected_shape.get()  # Получаем выбранную фигуру
+        dimensions = [float(entry.get()) for _, entry in self.dimension_labels if
+                      entry.winfo_ismapped()]  # Получаем размеры из полей ввода, которые отображены на экране
+
+        if shape == "Параллелепипед":
+            volume = calculate_parallelepiped_volume(*dimensions)  # Рассчитываем объем параллелепипеда
+            surface_area = calculate_parallelepiped_surface_area(
+                *dimensions)  # Рассчитываем площадь поверхности параллелепипеда
+            mass = calculate_parallelepiped_mass(volume, self.materials[self.selected_material.get()][
+                "density"])  # Рассчитываем массу параллелепипеда
+
+        elif shape == "Тетраэдр":
+            volume = calculate_tetrahedron_volume(dimensions[0])  # Рассчитываем объем тетраэдра
+            surface_area = calculate_tetrahedron_surface_area(
+                dimensions[0])  # Рассчитываем площадь поверхности тетраэдра
+            mass = calculate_tetrahedron_mass(volume, self.materials[self.selected_material.get()][
+                "density"])  # Рассчитываем массу тетраэдра
+        elif shape == "Шар":
+            volume = calculate_sphere_volume(dimensions[0])  # Рассчитываем объем шара
+            surface_area = calculate_sphere_surface_area(dimensions[0])  # Рассчитываем площадь поверхности шара
+            mass = calculate_sphere_mass(volume, self.materials[self.selected_material.get()][
+                "density"])  # Рассчитываем массу шара
+
+        self.output_label.config(
+            text=f"Объем: {volume:.2f}\nПлощадь поверхности: {surface_area:.2f}\nМасса: {mass:.2f}\n")  # Обновляем текст метки с результатами расчетов
+
+        self.save_to_docx(volume,surface_area,mass)
+
+
+
+root = tk.Tk()  # Создаем главное окно
+app = GeometryCalculator(root)  # Создаем экземпляр приложения
+root.mainloop()  # Запускаем главный цикл обработки событий
